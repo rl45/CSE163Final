@@ -1,0 +1,59 @@
+bioinformatics-unix-setup-intro,"1. Open terminal (command line)
+
+2. Syntax is command argument
+
+3. Arguments (flags,options, parameters) can be optional or required",
+bioinformatics-unix-setup-commands,"
+
+
+","#Change directory:
+cd~/directory_name
+
+#Pull header
+head-n 1 filename.tsv
+
+#Count rows
+wc -l filename.tsv
+
+#Retrieve column information(swap 1 for column #)
+cut -f 1 filename.tsv
+
+#Search for specific string
+grep term_name yourfile.txt
+
+#Paste horiziontally                                                            
+paste file.txt file.txt 
+
+#Search and replace
+sed 'enter_term_inside_quotations' filename.tsv > edited_filename.tsv
+
+#Filter blast output (Column_name greater than 95%)
+awk ' $column_name > 95 ' filename.tsv
+
+#Replace characters
+tr ""\r"" ""\n"" < filename.tsv > edited_filename.tsv
+
+#Date
+date"
+bioinformatics-unix-setup-structure,"Your computer stores file locations in a hierarchical structure. You are likely already used to navigating through this stucture by clicking on various folders (also known as directories) in a Windows Explorer window or a Mac Finder window. 
+
+Just like we need to select the appropriate files in the appropriate locations there (in a GUI), we need to do the same when working at a command-line interface. What this means in practice is that each file and directory has its own “address”, and that address is called its “path”.",
+bioinformatics-unix-variables,"Variables are placeholders that can change values for each iteration of a loop. Variables can be integers, objects, and strings","#Set variable to ""Europa""
+
+my_var=Europa
+
+#Print variable
+
+echo $my_var"
+bioinformatics-unix-forloop,"For loops are what let us write out a command or operation once, and have it run on all of our samples or files or whatever we want to act on. 
+
+Not only is this powerful, but it also helps with keeping our code more concise and readable, and it helps elmininate some more of our mortal enemy (human error). 
+","#Print each row in a file. Cat allows us to concatentate each column
+
+for item in $(cat file.txt)
+
+do
+
+   echo $item
+
+done"

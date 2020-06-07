@@ -1,0 +1,132 @@
+body {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    background-color: #fff;
+    width: 100%;
+    height: 700px;
+    margin-top: 10px;
+  }
+  
+  #main {
+    float: left;
+    width: 750px;
+  }
+  
+  #sidebar {
+    float: right;
+    width: 100px;
+  }
+  
+  #sequence {
+    width: 600px;
+    height: 70px;
+  }
+  
+  #legend {
+    padding: 10px 0 0 3px;
+  }
+  
+  #sequence text, #legend text {
+    font-weight: 600;
+    fill: #fff;
+  }
+  
+  #chart {
+    position: relative;
+  }
+  
+  #chart path {
+    stroke: #fff;
+  }
+  
+  #explanation {
+    position: absolute;
+    top: 260px;
+    left: 305px;
+    width: 140px;
+    text-align: center;
+    color: #666;
+    z-index: -1;
+  }
+  
+  #percentage {
+    font-size: 2.5em;
+  }
+
+  #center {
+      position: absolute;
+      align-items: center;
+      left:50%;
+      top: 65%;
+      transform: translate(-50%, -50%);
+  }
+
+  #bannerimage {
+    width: 100%;
+    display:inline-block;
+    src: url(https://source.unsplash.com/user/erondu/1600x900);
+    height: 200px;
+    background-position: center;
+  }
+
+  #div_container{
+      display: flex;
+      flex-direction: row;
+  }
+
+  .padding{
+      padding-left: 60px;
+      padding-right: 60px;
+      padding-top: 15px;
+      padding-bottom: 15px;
+  }
+
+  #box{
+      background-color: transparent;
+      border: 1px;
+      width: 800px;
+      padding-top: 500x;
+  }
+
+  .prettyprint{
+      width: 800px;
+  }
+
+  /* The Modal (background) */
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgb(0,0,0); /* Fallback color */
+  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+/* Modal Content/Box */
+.modal-content {
+  background-color: #fefefe;
+  margin: 15% auto; /* 15% from the top and centered */
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%; /* Could be more or less, depending on screen size */
+}
+
+/* The Close Button */
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}

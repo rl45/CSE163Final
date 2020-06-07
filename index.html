@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Sequences sunburst</title>
+    <script src="//d3js.org/d3.v4.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Open+Sans:400,600">
+    <link rel="stylesheet" type="text/css" href="index.css" />
+</head>
+
+<body>
+    <!-- The Modal -->
+    <div id="myModal" class="modal">
+
+        <!-- Modal content -->
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="notes"></div>
+        </div>
+
+    </div>
+    <br>
+    <div class="padding container">
+        <div class="row">
+            <div id="main" class="col">
+                <div id="sequence"></div>
+                <div id="chart">
+                    <div id="explanation" style="visibility: hidden;">
+                        <span id="percentage"></span><br />
+                        <span id="children"></span><br />
+                    </div>
+                </div>
+            </div>
+            <div id="sidebar" class="col">
+                <!--Button-->
+                <button id="viewSavedNotes"> View Saved Notes</button>
+                <!--Legend Checkbox-->
+                <input type="checkbox" id="togglelegend"> Legend<br />
+                <!--Legend Content-->
+                <div id="legend" style="visibility: hidden;"></div>
+            </div>
+        </div>
+        <div id="box">
+            <h1 id="title" style="visibility: hidden;">Title</h1>
+            <p id="description" style="visibility: hidden;">Description</p>
+            <pre class="prettyprint" style="visibility: hidden;" id="code">
+            </pre>
+        </div>
+    </div>
+
+
+    <script type="text/javascript" src="index.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+    <script type="text/javascript">
+        // Hack to make this example display correctly in an iframe on bl.ocks.org
+        d3.select(self.frameElement).style("height", "700px");
+    </script>
+</body>
+
+</html>
