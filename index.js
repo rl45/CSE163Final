@@ -17,7 +17,34 @@ var colors = {
     "commands": "#a173d1",
     "structure": "#6ab975",
     "variables": "#bbbbbb",
-    "forloop": "#a173d1"
+    "forloop": "#a173d1",
+
+    "r": "#5687d1",
+    "data": "#7b615c",
+    "tidyverse": "#de783b",
+    "plotting": "#6ab975",
+    "barplot": "#a173d1",
+    "linearmodel": "#6ab975",
+
+
+    "functionalannotation": "#5687d1",
+    "blast": "#7b615c",
+    "HMMER": "#de783b",
+    "alignsequences": "#6ab975",
+    "fegenie": "#a173d1",
+    "HMM": "#6ab975",
+
+    "amplicons": "#5687d1",
+    "workflow": "#7b615c",
+    "dada2": "#de783b",
+
+    "metagenomics": "#5687d1",
+    "qualitycontrol": "#7b615c",
+    "taxonomicclassification": "#de783b",
+    "genomeassembly": "#6ab975",
+    "transcriptomics": "#a173d1",
+    "rRNA": "#6ab975",
+
 };
 
 // Total size of all segments; we set this later, after loading the data.
@@ -456,6 +483,14 @@ function buildHierarchy(csv) {
         var currentNode = root;
         for (var j = 0; j < parts.length; j++) {
             var children = currentNode["children"];
+            console.log("currentnode" + currentNode)
+
+
+            if(children == undefined){
+                break;
+            }
+
+
             var nodeName = parts[j];
             var childNode;
             if (j + 1 < parts.length) {
@@ -477,6 +512,9 @@ function buildHierarchy(csv) {
             } else {
                 // Reached the end of the sequence; create a leaf node.
                 childNode = { "name": nodeName, "description": description, "code": code };
+                console.log(nodeName)
+                //console.log("Childnode" + childNode)
+                //console.log("children" + children)
                 children.push(childNode);
             }
         }

@@ -2,8 +2,26 @@ bioinformatics-unix-setup-intro,"1. Open terminal (command line)
 
 2. Syntax is command argument
 
-3. Arguments (flags,options, parameters) can be optional or required",
-bioinformatics-unix-setup-commands,"
+3. Arguments (flags,options, parameters) can be optional or required",    
+bioinformatics-unix-setup-commands,"Change directory:                                                              cd~/directory_name
+
+Pull header:                                                                        head-n 1 filename.tsv
+
+Count rows:                                                                        wc -l filename.tsv
+
+Retrieve column information(swap 1 for column #):           cut -f 1 filename.tsv
+
+Search for specific string:                                                   grep term_name yourfile.txt
+
+Paste horiziontally:                                                             paste file.txt file.txt 
+
+Search and replace:                                                           sed 'enter_term_inside_quotations' filename.tsv > edited_filename.tsv
+
+Filter blast output (Column_name greater than 95%):       awk ' $column_name > 95 ' filename.tsv
+
+Replace characters:                                                           tr ""\r"" ""\n"" < filename.tsv > edited_filename.tsv
+
+Date:                                                                                   date
 
 
 ","#Change directory:
@@ -57,3 +75,1543 @@ do
    echo $item
 
 done"
+bioinformatics-r-intro,Basic R operators and intro to syntax,"# Basic operators
+5+5
+5-5
+3*5
+15/2
+2^2
+45/6
+45%%6
+
+#Assigning Variables & directionality
+x <- 42
+x
+
+# Lists and calling
+x <- c(1,7,9)
+x[2]
+
+apples <- 5
+oranges <- 6
+apples + oranges
+fruit <- apples+oranges
+
+# data types
+oranges <- ""grapefruit""
+class(oranges)
+
+oranges <- 6
+class(oranges)
+
+oranges <- ""6""
+class(oranges)
+
+mylogical <- FALSE
+class(mylogical)
+
+# see further: https://www.tutorialspoint.com/r/r_data_types.htm
+
+# Create vector
+numeric_vector <- c(1, 10, 49)
+character_vector <- c(""a"", ""b"", ""c"")
+
+names(numeric_vector) <- character_vector
+numeric_vector
+x+numeric_vector
+
+ans <- x>numeric_vector
+ans
+
+
+# Matrices
+matrix(1:9, byrow = FALSE, nrow = 3)
+
+
+q <- c(460, 314)
+r <- c(290, 247)
+w <- c(309, 165)
+
+c(q, r, w)
+mydataset <- matrix(c(q, r, w), byrow = TRUE, nrow = 3)
+mydataset
+
+region <- c(""one"", ""two"")
+category <- c(""A"",""B"",""C"")
+
+rownames(mydataset) <- category
+colnames(mydataset) <- region
+
+mydataset
+
+rowSums(mydataset)
+
+totals <- rowSums(mydataset)
+
+cbind(mydataset,totals)"
+bioinformatics-r-data,"Basic data table manipulation
+Import test data into R from .csv format
+Applying basic functions to a data table","# We will work with the iris database, which comes with R. This is how you load it:
+data(""iris"")
+
+# Get a general idea of the iris table
+str(iris)
+head(iris)
+nrow(iris)
+ncol(iris)
+colnames(iris)
+rownames(iris)
+# You can change a columns name like this
+colnames(iris)[2] <- ""Sep.Wid""
+colnames(iris)[2] <- ""Sepal.Width""
+
+# Transposing a table
+
+# Sorting the table
+iris[order(iris$Petal.Length, decreasing=TRUE),]
+# Sorting by multiple columns
+iris[order(iris$Species, iris$Petal.Length),]
+# Sorting by multiple columns - species and decreasing petal length
+iris[order(iris$Species, -iris$Petal.Length),]
+#
+# Filtering by column value: I have to exclude the last column from the analysis 
+# because it's not numeric. See what happens when you don't exclude it!
+iris[iris$Sepal.Length>7,]
+iris[iris$Species==""setosa"",]
+
+# Summing by row/column
+colSums(iris[,-ncol(iris)])
+rowSums(iris[,-ncol(iris)])
+
+# Get the mean value per column
+colMeans(iris[,-ncol(iris)])
+
+# Converting to relative abundance
+# This isn't meaningful when using the iris database, so let's use an OTU counts table
+# There are two ways to do this. One involves looping through all the rows, 
+# and the other uses a very important function in R called ""apply"".
+
+# First let's read an OTU table into a variable
+OTUs <- read.csv(""OTUtable.csv"")
+str(OTUs)
+
+# Let's start with a loop
+# First let's save the column sums into a vector named vec
+# We want to exclude the OTU number and the taxonomy
+vec <- colSums(OTUs[,-c(1, ncol(OTUs))])
+# We'll manipulate a new table named iris2 (you could also manipulate your original table)
+# Here we are going row by row and dividing the cells in that row by the vector of column sums
+# R will divide the first cell in the row by the first cell in the vector, 
+# the second by the second etc.
+relabun <- OTUs
+for (r in 1:nrow(relabun)) {
+  relabun[r,-c(1, ncol(relabun))] <- relabun[r,-c(1, ncol(relabun))]/vec
+}
+head(relabun)
+# If we want the numbers to look like percentages rather than fraction we can multiply them all by 100
+relabun[,-c(1, ncol(relabun))] <- relabun[,-c(1, ncol(relabun))]*100
+head(relabun)
+
+# Now let's do the same with apply
+# Define a function that divides a row by the vector of column sums (vec)
+relabun <- OTUs
+divByColsum <- function(x) {x/vec}
+relabun <- apply(OTUs[,-c(1, ncol(OTUs))], 1, divByColsum)
+head(relabun)
+# Notice that apply transposes the table, so let's run it again and also transpose the output
+relabun <- t(apply(OTUs[,-c(1, ncol(OTUs))], 1, divByColsum))
+str(relabun)
+# Iris2 is now a list, which is a different data type in R. We want a data frame:
+relabun <- as.data.frame(t(apply(OTUs[,-c(1, ncol(OTUs))], 1, divByColsum)))
+str(relabun)
+
+# Sadly now we don't have the OTU_ID and taxonomy columns
+# We can use the function merge to merge two table by a column that exists in both of them that has unique IDs
+# We don't have a variable like this here, but we haven't changed the order of rows, 
+# so we can use row names as an ID variable
+relabun2 <- merge(relabun2, OTUs, by=""row.names"")
+head(relabun2)
+# Oops, now we have both counts and relative abundance in the same table as well as an additional
+# variable names Row.names.
+# Let's try again:
+relabun2 <- merge(relabun, OTUs[,c(1, ncol(OTUs))], by=""row.names"")
+head(relabun2)
+# Throwing out the Row.names column
+relabun2 <- relabun2[,-1]
+head(relabun2)
+# Sadly row names is not a numeric variable, but a string. That's why relabun2 isn't sorted like OTUs
+# What if we actually had a common column like OTU_ID between the tables we're merging?
+relabun3 <- relabun2[,-ncol(relabun2)] # OTU_ID and samples
+relabun4 <- relabun2[,c(ncol(relabun2)-1, ncol(relabun2))] # OTU_ID and taxonomy
+# Now we have 2 tables where column 1 is common between them
+relabun5 <- merge(relabun3, relabun4, by=""OTU_ID"")
+
+# What if we the column we're using to merge has a different name in each table?
+colnames(relabun4)[1] <- ""George""
+relabun5 <- merge(relabun3, relabun4, by.x=""OTU_ID"", by.y=""George"")"
+bioinformatics-r-tidyverse,"Overview of data frames, matrices, and tibbles
+Showing how to work with data tables in base R vs. Tidyverse","#import test data
+gene_data <- read.delim(""test-data-skoog.txt"")
+
+#Different types of data
+class(gene_data)
+head(gene_data)
+str(gene_data) # Factors and integers included in this data"
+bioinformatics-r-plotting,    ,"# Scatter plots in base R and ggplot2
+
+data(iris)
+head(iris)
+
+# Base R - scatter plot
+plot(iris$Petal.Length, iris$Sepal.Length)
+
+# You can define everything from column labels through shape and color of the dots
+plot(iris$Petal.Length, iris$Sepal.Length, xlab=""Petal Length"", ylab=""Sepal Length"", main=""Iris sepal as a function of petal"", col=""purple"", pch=3)
+# Google R pch for shape options!
+
+# What if you want each species in a different color?
+plot(iris$Petal.Length, iris$Sepal.Length, xlab=""Petal Length"", ylab=""Sepal Length"", main=""Iris sepal as a function of petal"", col=iris$Species, pch=3)
+legend(""topleft"", legend = levels(iris$Species), col = 1:3, cex = 0.8, pch = 3)
+# type palette() in the console to see the default colors R uses when you assign a factor to col
+
+# Change the color palette with RColorBrewer
+# install.packages(""RColorBrewer"")
+library(RColorBrewer)
+display.brewer.all()
+# The same function palette() can also set the color palette you want to use
+palette(brewer.pal(n = 3, name = ""Dark2""))
+plot(iris$Petal.Length, iris$Sepal.Length, xlab=""Petal Length"", ylab=""Sepal Length"", main=""Iris sepal as a function of petal"", col=iris$Species, pch=3)
+legend(""topleft"", legend = levels(iris$Species), col = 1:3, cex = 0.8, pch = 3)
+# RColorBrewer has color schemes suitable for color blindness
+
+# Want to set your own color choices? Use hexadecimal code? Sure thing!
+palette(c(""#821273"", ""#128230"", ""#825112""))
+plot(iris$Petal.Length, iris$Sepal.Length, xlab=""Petal Length"", ylab=""Sepal Length"", main=""Iris sepal as a function of petal"", col=iris$Species, pch=20)
+legend(""topleft"", legend = levels(iris$Species), col = 1:3, cex = 0.8, pch = 20)
+# Check out https://www.sessions.edu/color-calculator/ to find color schemes depending on the number of groups
+
+# Changing the size of the points 
+plot(iris$Petal.Length, iris$Sepal.Length, xlab=""Petal Length"", ylab=""Sepal Length"", main=""Iris sepal as a function of petal"", col=iris$Species, pch=20, cex=0.8)
+legend(""topleft"", legend = levels(iris$Species), col = 1:3, cex = 0.8, pch = 20)
+
+# Adding margins - c(bottom, left, top, right)
+par(mar=c(6,5,5,10))
+# To allow the legend to be outside of the plot
+par(xpd=TRUE)
+plot(iris$Petal.Length, iris$Sepal.Length, xlab=""Petal Length"", ylab=""Sepal Length"", main=""Iris sepal as a function of petal"", col=iris$Species, pch=20, cex=0.8)
+legend(7.2, 8, legend = levels(iris$Species), col = 1:3, cex = 0.8, pch = 20)
+
+# Explore ?par() to see dozens of graphic parameters you can set in your plot
+
+# Add trendlines with linear models
+par(xpd=FALSE)
+fit <- lm(iris$Sepal.Length~iris$Petal.Length)
+summary(fit)
+co <- coef(fit)
+
+# abline draws a line defined by a formula, in this case ax+b (defined by the linear model coefficients)
+abline(co, col=""blue"", lwd=2)
+# You can also add a vertical line or a horizontal line
+abline(v=2.2, col=""grey"", lwd=3)
+abline(h=7.05, col=""black"", lwd=1)
+
+
+# How to do all of this in ggplot2
+
+library(""tidyverse"")
+# First we create the base of the plot by providing the data and the grouping variable if you have one
+p <- ggplot(data=iris, aes(y=Sepal.Length, x=Petal.Length))
+# Now you can set graphics however you like! You can also keep adding parameters with the operator +
+p + geom_point()
+# Change points color by grouping variable Species
+p + geom_point(aes(colour=factor(Species)))
+# Set your own colors
+p + geom_point(aes(colour=factor(Species))) + 
+  scale_colour_manual(values=c(""#1f78b4"", ""#a6cee3"", ""#6a3d9a""))
+# You can also use other color palettes with scale_color_discrete
+p + geom_point(aes(colour=factor(Species))) + 
+  scale_colour_brewer(palette=""Dark2"")
+# Change the size of the points - note that for a constant size the parameter has to be OUTSIDE of aes()
+p + geom_point(aes(colour=factor(Species)), size=2) + 
+  scale_colour_manual(values=c(""#1f78b4"", ""#a6cee3"", ""#6a3d9a""))
+# Change the size of the points to depend on a variable, so it has to be INSIDE of aes()
+p + geom_point(aes(colour=factor(Species), size=Petal.Width)) + 
+  scale_colour_manual(values=c(""#1f78b4"", ""#a6cee3"", ""#6a3d9a""))
+# Change the theme of the plot
+p + geom_point(aes(colour=factor(Species), size=2)) + 
+  scale_colour_manual(values=c(""#1f78b4"", ""#a6cee3"", ""#6a3d9a"")) +
+  theme_classic()
+# Change the shape of the points
+p + geom_point(aes(colour=factor(Species)), shape=12, size=3) + 
+  scale_colour_manual(values=c(""#1f78b4"", ""#a6cee3"", ""#6a3d9a"")) +
+  theme_dark()
+# If you type theme_ and then hit Tab you'll get all options for different themes. Try them out!
+# Change the shape of the points by a grouping variable
+p + geom_point(aes(colour=factor(Species), shape=Species)) + 
+  scale_colour_manual(values=c(""#1f78b4"", ""#a6cee3"", ""#6a3d9a"")) +
+  theme_classic()
+# If you had another grouping variable you could use it to set shapes instead of using Species again
+tmp <- iris
+tmp$new_grp <- sample(x = c(1, 2, 3), size = nrow(tmp), replace = TRUE)
+p <- ggplot(data=tmp, aes(y=Sepal.Length, x=Petal.Length))
+p + geom_point(aes(colour=factor(Species), shape=factor(new_grp))) + 
+  scale_colour_manual(values=c(""#1f78b4"", ""#a6cee3"", ""#6a3d9a"")) +
+  theme_classic()
+# Set axis labels
+p + geom_point(aes(colour=factor(Species), shape=factor(new_grp))) + 
+  scale_colour_manual(values=c(""#1f78b4"", ""#a6cee3"", ""#6a3d9a"")) +
+  theme_classic() +
+  xlab(""Petal Length"") +
+  ylab(""Sepal Length"") +
+  ggtitle(""Iris sepal as a function of petal"")
+# Or you could just use the function labs() to set all three and center the title with hjust
+# hjust gets a number from 0 to 1. 0 means left-aligned and 1 means right aligned, so 0.5 means centered.
+p + geom_point(aes(colour=factor(Species))) + 
+  scale_colour_manual(values=c(""#1f78b4"", ""#a6cee3"", ""#6a3d9a"")) +
+  theme_classic() +
+  labs(title=""Iris sepal as a function of petal"", x=""Petal Length"", y=""Sepal Length"") +
+  theme(plot.title = element_text(hjust = 0.5))
+# Change legend title and labels
+p + geom_point(aes(colour=factor(Species))) + 
+  theme_classic() +
+  labs(title=""Iris sepal as a function of petal"", x=""Petal Length"", y=""Sepal Length"") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_colour_manual(values=c(""#1f78b4"", ""#a6cee3"", ""#6a3d9a""), 
+                    name=""Species"",
+                    breaks=c(""setosa"", ""versicolor"", ""virginica""),
+                    labels=c(""Setosa"", ""Versicolor"", ""Virginica""))
+# ggplot2 has its own version of abline that also calculates the model
+p + geom_point(aes(colour=factor(Species))) + 
+  theme_classic() +
+  labs(title=""Iris sepal as a function of petal"", x=""Petal Length"", y=""Sepal Length"") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_colour_manual(values=c(""#1f78b4"", ""#a6cee3"", ""#6a3d9a""), 
+                      name=""Species"",
+                      breaks=c(""setosa"", ""versicolor"", ""virginica""),
+                      labels=c(""Setosa"", ""Versicolor"", ""Virginica"")) +
+  geom_smooth(method = ""lm"", se = FALSE)
+# Check out geom_hline and geom_vline that match abline(h=) and abline(v=)
+# Add a 95% confidence interval
+p + geom_point(aes(colour=factor(Species))) + 
+  theme_classic() +
+  labs(title=""Iris sepal as a function of petal"", x=""Petal Length"", y=""Sepal Length"") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_colour_manual(values=c(""#1f78b4"", ""#a6cee3"", ""#6a3d9a""), 
+                      name=""Species"",
+                      breaks=c(""setosa"", ""versicolor"", ""virginica""),
+                      labels=c(""Setosa"", ""Versicolor"", ""Virginica"")) +
+  geom_smooth(method = ""lm"", se = TRUE)
+# Add a 90% confidence interval
+p + geom_point(aes(colour=factor(Species))) + 
+  theme_classic() +
+  labs(title=""Iris sepal as a function of petal"", x=""Petal Length"", y=""Sepal Length"") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_colour_manual(values=c(""#1f78b4"", ""#a6cee3"", ""#6a3d9a""), 
+                      name=""Species"",
+                      breaks=c(""setosa"", ""versicolor"", ""virginica""),
+                      labels=c(""Setosa"", ""Versicolor"", ""Virginica"")) +
+  geom_smooth(method = ""lm"", se = TRUE, level=0.9)
+# Create a trendline for each species by defining colour within the original plot - this grouping is now inherited downstream
+p <- ggplot(data=tmp, aes(y=Sepal.Length, x=Petal.Length, colour=Species))
+p + geom_point(aes(colour=factor(Species))) + 
+  theme_classic() +
+  labs(title=""Iris sepal as a function of petal"", x=""Petal Length"", y=""Sepal Length"") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_colour_manual(values=c(""#1f78b4"", ""#a6cee3"", ""#6a3d9a""), 
+                      name=""Species"",
+                      breaks=c(""setosa"", ""versicolor"", ""virginica""),
+                      labels=c(""Setosa"", ""Versicolor"", ""Virginica"")) +
+  geom_smooth(method = ""lm"", se = TRUE, level=0.99)"
+bioinformatics-r-barplot,    ,"library(tidyverse)
+library(RColorBrewer)
+# library(cowplot)
+library(patchwork)
+
+head(starwars)
+
+# Addressing things brought up in the R slack thread:
+# - Network analysis channel! check it out.
+# - visualizing ordination (pcoa) - next! basic stats required!
+# - single chart with 2 y-axes. No-go in tidyverse... check out base R plotting
+
+# Bar charts vs. box plots
+## How do we make them? When are they appropriate?
+
+# Star Wars data- we want to know more about the droids and humans that live on Tatooine (height and mass)
+
+# First what is the data I'm looking at on Tatooine
+View(starwars)
+
+tatooine <- starwars %>% 
+  filter(homeworld == ""Tatooine"") %>% # select only those from Tatooine
+  data.frame
+
+# How many species on Tatooine?
+unique(starwars$species); length(unique(starwars$species))
+unique(tatooine$species); length(unique(tatooine$species))
+
+# Bar chart example
+## First, example of a bar chart **but something isn't right**
+ggplot(tatooine, aes(x = species, y = height)) +
+  geom_bar(stat = ""identity"")
+  
+# What's wrong with this?
+starwars %>% 
+  filter(homeworld == ""Tatooine"") %>%
+  group_by(species, homeworld) %>%
+  summarise(MEAN_height = mean(height), MEDIAN_height = median(height),
+            MAX_height = max(height), MIN_height = min(height),
+            MEAN_mass = mean(mass), MEDIAN_mass = median(mass))
+
+hist((filter(tatooine, species == ""Human""))$height)  
+
+hist((filter(tatooine, species == ""Droid""))$mass)  
+
+# A better way to show this data is via box plot!
+## Let's address that question now, but with a better graphical representation
+ggplot(tatooine, aes(x = species, y = height)) +
+  geom_boxplot()
+
+## Boxplots in ggplot:
+#  median at middle
+#  upper/lower hinges = 1st and 3rd quartiles (25th and 75th percentiles)
+#  whiskers = largest/lowest value, but maxes at 1.5 * inter-quartile range (distance from upper/lower hinges)
+# Outliers are shown as points
+# NOTE: varies from base R 'boxplot()'
+
+ggplot(tatooine, aes(x = species, y = height)) +
+  geom_boxplot() +
+  geom_point()
+
+ggplot(tatooine, aes(x = species, y = height)) +
+  geom_boxplot() +
+  geom_jitter()
+
+ggplot(tatooine, aes(x = species, y = height)) +
+  geom_boxplot() + #notch = TRUE, varwidth = TRUE, fill = """", color = """"
+  geom_jitter()
+
+# Repeat with mass now:
+ggplot(tatooine, aes(x = species, y = mass)) +
+  geom_boxplot() +
+  geom_jitter()
+# What's with the warning?
+
+
+## Quick example of combining all the tidyverse!
+filter(starwars, homeworld == ""Tatooine"") %>%
+  ggplot(aes(x = species, y = mass)) +
+  geom_jitter() +
+  geom_boxplot()
+
+## Back to the bar plot example
+# This breaks down the species count for 
+ggplot(tatooine, aes(x = species)) +
+  geom_bar(stat = ""count"")
+
+# Let's add aesthetics and set it equal to a variable
+bar_num_species <- ggplot(tatooine, aes(x = species)) +
+  geom_bar(stat = ""count"", width = 0.4, color = ""black"", fill = ""orange"") +
+  # Note different in color vs. fill with ggplot
+  theme_bw() + # always google themes!
+  labs(x = ""Species"", y = ""Total number found on Tatooine"") +
+  theme(axis.text.x = element_text(face = ""bold"", color = ""black""))
+bar_num_species
+
+# Recall when I mentioned I prefer long format over wide format?
+## Let's explore that with lots of tidyverse data wrangling and then plot everything
+colnames(starwars)
+
+starwars_long <- starwars %>%
+  select(name, height, mass, homeworld, species) %>% # select columns that I want
+  filter(homeworld == ""Tatooine"") %>% # grab only species from tatooine
+  pivot_longer(cols = height:mass, names_to = ""MEASUREMENT"", values_to = ""VALUE"") %>% # wrangle to long format
+  data.frame
+head(starwars_long)
+
+# Now we can plot BOTH measurements (height and mass) using ""facet_grid()""
+ggplot(starwars_long, aes(x = species, y = VALUE)) +
+  geom_jitter() +
+  geom_boxplot() +
+  facet_grid(. ~ MEASUREMENT)
+
+# Let's improve the aesthetics and then combine with our other plot
+# theme
+# x and y labels
+# colors for droids and humans
+
+# Factor colors:
+species_order <- c(""Human"", ""Droid"")
+species_color <- c(""#c51b8a"", ""#31a354"")
+starwars_long$SPECIES_ORDER <- factor(starwards_long$species, levels = species_order)
+names(species_color) <- species_order
+#
+height_mass <- ggplot(starwars_long, aes(x = species, y = VALUE)) +
+  geom_jitter() +
+  geom_boxplot(aes(fill = species), color = ""black"") +
+  scale_fill_manual(values = species_color) +
+  facet_grid(. ~ MEASUREMENT) + # Play with this
+  labs(x = ""Species"", y = ""Value"") +
+  theme_bw() +
+  theme(axis.text = element_text(color = ""black""),
+        strip.background = element_blank(),
+        legend.position = ""none"")
+height_mass
+height_mass %+% subset(starwars_long, species %in% ""Human"")
+height_mass %+% subset(starwars_long, species %in% ""Droid"")
+
+count <- ggplot(starwars_long, aes(x = species)) +
+  geom_bar(stat = ""count"", aes(fill = species), color = ""black"") +
+  scale_fill_manual(values = species_color) +
+  labs(x = ""Species"", y = ""Count"") +
+  theme_bw() +
+  theme(axis.text = element_text(color = ""black""),
+        strip.background = element_blank(),
+        legend.position = ""none"")
+
+# Combining plots together
+# library(cowplot)
+library(patchwork)
+height_mass + count
+height_mass | count
+plot <- height_mass / count
+plot + plot_annotation(tag_levels = 'A')
+
+
+####
+## The taxonomy barplot
+asv_table <- read.delim(""test-axial-asvs.txt"", sep = ""\t"")
+View(asv_table) # Check out overall structure
+colnames(asv_table) # Sample names
+
+length(asv_table$Feature.ID) # ASVs
+length(asv_table$Taxon) # Taxonomy names for ASVs
+
+# Remember how much I love long format data?
+asv_long <- asv_table %>%
+  pivot_longer(cols = Axial_Anemone_FS891_2013:Axial_Skadi_FS910_2014, names_to = ""SAMPLE"", values_to = ""COUNT"") %>%
+  filter(COUNT > 0) %>%
+  separate(SAMPLE, c(""Location"", ""Vent"", ""VentID"", ""Year""), sep = ""_"", remove = FALSE) %>%
+  separate(Taxon, c(""Domain"", ""Supergroup"", ""Phylum"", ""Class"", ""Order"", ""Family"", ""Genus"", ""Species""), sep = "";"", remove = FALSE) %>%
+  data.frame
+
+head(asv_long)
+
+# Summarize to supergroup level
+supergroup <- asv_long %>%
+  group_by(SAMPLE, Vent, Year, Supergroup) %>%
+  filter(!is.na(Supergroup) & Year == ""2013"") %>%
+  summarise(SUM = sum(COUNT)) %>%
+  data.frame
+
+head(supergroup)
+
+# Stacked
+ggplot(supergroup, aes(x = SAMPLE, y = SUM, fill = Supergroup)) +
+  geom_bar(stat = ""identity"", position = ""stack"") +
+  theme(axis.text.x = element_text(angle = 90))
+
+# Make it look better
+# Factor - see example from above on how to add colors to the Supergroup level
+# https://stackoverflow.com/questions/7263849/what-do-hjust-and-vjust-do-when-making-a-plot-using-ggplot
+# library(RColorBrewer)
+
+ggplot(supergroup, aes(x = SAMPLE, y = SUM, fill = Supergroup)) +
+  geom_bar(stat = ""identity"", position = ""fill"", color = ""black"") +
+  scale_fill_brewer(palette = ""Dark2"") +
+  labs(x = """", y = ""Relative abundance"") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))"
+bioinformatics-r-linearmodel,   ,"---
+title: ""BioVCN R Lesson 07 -- Statistics""
+author: ""Jacob A. Cram""
+output: html_notebook
+---
+
+Today we are going to talk about running some basic statistics in R.
+
+```{r}
+library(tidyverse)
+library(plotly)
+library(cowplot)
+```
+
+Usually, when I want to run stats on a thing, I start with some basic descriptive stats. Fortunately we did this last week with the starwars dataset, so lets jump back in.
+
+```{r}
+data(starwars)
+```
+
+Lots of statistics are applied to continuous variables. Lets take a look at the relationship between height and mass.
+I'm going to make an interactive plot with `ggplotly` so we can mouse over points and see them better.
+
+Here I included a name and spec variable, but didn't map them to anything. Thats so you can see them when you mouse over them.
+```{r}
+hmPlot <- starwars %>% ggplot(aes(x = height, y = mass, name = name, spec = species)) + geom_point() + theme_cowplot()
+ggplotly(hmPlot)
+```
+
+Woah dude. One character is anomalously heavy. 
+Mouse over the outlier so you can see who it is.
+
+
+![That was my first guess too](pics/498px-Jabba_the_Hutt.jpg)
+
+Jabba is probably going to screw up all of our stats, lets focus on the relationship of all of the other characters by removing him.
+
+```{r}
+starwars01 <- starwars %>% filter(!str_detect(name, ""Jabba"")) # Complecated syntac because I can't spell the rest of his name
+```
+
+```{r}
+hmPlot01 <- starwars01 %>% ggplot(aes(x = height, y = mass, name = name, spec = species)) + geom_point() + theme_cowplot()
+ggplotly(hmPlot01)
+```
+
+So here's our relationship. It looks sort of, but not reeally linear, which makes sense, there are lots of species in the galaxy.
+
+Sometimes when we do stats, the stats like to imagine normally distributed data.
+
+```{r}
+starwars01 %>% pivot_longer(cols = mass:height, names_to = ""measurement"", values_to = ""value"") %>% 
+  ggplot(aes(x = value)) + facet_wrap(measurement~.) + geom_histogram()
+```
+
+Hmm. Sort of.
+
+See if you can figure out what I did above. 
+
+Lets see if height and width are correlated.
+
+```{r}
+cor.test(starwars01$height, starwars01$mass, method = ""pearson"")
+cor.test(starwars01$height, starwars01$mass, method = ""spearman"")
+```
+
+Here are a parametric and non-parametric correlation test. The values I usually think about are cor (pearson), which is the R value, or rho(spearman) which is its ""rho"" which is a lot like an R value.
+
+Numbers closer to 1 are more  positively correlated, closer to -1 are more  negatively correlated, closer to 0 are not correlated. 
+
+There is a p-value for both of these, which is essentially the probability that if all of the assumptions of the model hold, the true R or rho value is zero.
+
+# Regressions
+Regressions are also pretty popular with the kids these days. Lets do one!
+Lets see how well `height` explains `mass`
+
+```{r}
+mod <- lm(mass ~ height, data = starwars01)
+summary(mod)
+```
+
+Lets look at what this tells us.
+Residuals are essentially the distance of each point from the models prediction. The one that is farthest below is ~ -39 too low, the highest above is ~ 57 and the median and first and third quartiles are also shown.
+
+Coefficients are often what you care about. The estemate tells us about the slope and intercept of the linear regression. These values basically say our model looks like this
+
+mass = -32.5 + 0.62 * height
+
+We don't know the true values of these paramters, so the standard error gives us an idea of the ranges of the two. T-value is the test score to see how good those are, band the p-value tells you if the answer is statistically significant.
+
+4.02 x 10^-12 < 0.002 so it the height value gets a bunch of stars after it. I usually don't make too much of the p value of the intercept.
+
+Residual standard error is the standard deviation of the residuals, according to the internet.
+56 degrees of freedom is calculated as our sample size, minus the complexity of the model.  We have 58 characters, but we loose one DF for the intercept and another for the height varaible that we are using.
+
+There is also an R^2, and adjusted R^2 which gets smaller as the model gets more complicated, and a p-value for the whole model.
+
+## Residuals
+Linear models like to assume that the residuals are normally distributed. We want to make sure that no person is really affecting our model too much. We can plot the model to do this.
+
+```{r}
+plot(mod)
+```
+
+## Other way of looking at output data
+
+the `broom` package gives a nice matrix version of model results
+
+```{r}
+library(broom)
+tidy(mod)
+```
+
+Lets see how well our model's predictions compare to the actual data.
+
+We can use the predict function to generate some predictions
+
+```{r}
+# Make a data frame containing all of the possible heights, from the shortist to tallest character
+predPreDf <- tibble(
+  height = min(na.omit(starwars01$height)): max(na.omit(starwars01$height))
+)
+# for each height, predict the mass
+PredMass <- predict(mod, predPreDf) # predict requires a model, mod, and a data frame with the predictors in it. Our only predictor is height, so its just a data frame with one thing
+# Stick the range of heights and predicted masses together into a data fraeme
+predDf <- tibble(height = predPreDf$height, mass = PredMass)
+# plot the original data
+starwars01 %>% ggplot(aes(x = height, y = mass)) + geom_point() +
+  # plot the predicted values, notice that I include the predicted data in the ""data"" argument below
+  geom_path(aes(x = height, y = mass), data = predDf, color = ""darkgreen"")
+```
+
+
+# Models with categorical variables
+There are a lot of species right now, but most of them only have a few characters. I'm interested in looking at things that differentiate humans from other species. So lets make a new column that indicates whether a character is human
+
+```{r}
+starwars02 <- starwars01 %>% mutate(isHuman = ifelse(species == ""Human"", ""Yes"", ""No""))
+```
+
+Lets see if humanity is a reasonable predictor of a characters' mass.
+
+First, lets plot the two against eachother
+
+```{r}
+ggplot(aes(isHuman, mass), data = starwars02) + geom_point()
+```
+
+ok, one person has a species that is NA. It looks like humans tend to be intermediate in mass, with a lot of overlap of the non humans.
+
+Lets ask if humans tend to have different mass than non humans. I'm betting not so much, since they seem to be right in the middle of the other organisms masses.
+
+```{r}
+modMH <- lm(mass ~ isHuman, data = starwars02)
+summary(modMH)
+```
+
+So with categorical variables, we can interperet this much the same way as in the last plot. We have a model that looks something like.
+
+mass = 72 + 11 * isHumanYes
+
+This essentially says that it the character was not human, we treat isHumanYes as 0, and if the character is human, we treat it as one. This says essentially that the average mass of a human is.
+
+72 + 11 * 1 = 83
+
+And for non humans 
+71 + 11 * 0 = 72.
+
+That said, our p value for the isHumanYes term is 0.171, which is > 0.05, which means that even if there was no real trend, its pretty likely that we could have gotten at least this strong of a result.
+
+We can make our model even more complicated by adding in gender.
+
+```{r}
+plotHumanSpec <- ggplot(aes(x = isHuman, y = mass, shape = gender, name = name, species = species), data = starwars02) + geom_point(size = 2) 
+ggplotly(plotHumanSpec)
+```
+
+Among other things, it becomes clear that most characters in starwars are males.
+
+```{r}
+starwars02 %>% group_by(isHuman, gender) %>% summarize(n = n())
+```
+
+
+One character has no gender and a few have NA for gender. And in the star wars universe, that is the limit to characters gender types. We won't have the statistical power to look at more than male and female characters here, and so I'm going to limit the analysis just to just male, female, human, and nonhuman.
+
+```{r}
+starwars03 <- starwars02 %>% filter(gender %in% c(""male"", ""female""), isHuman %in% c(""Yes"", ""No""))
+```
+
+```{r}
+modMHG <- lm(mass ~ isHuman + gender, data = starwars03)
+summary(modMHG)
+```
+
+So here we try a model with both isHuman and male. You would interpret this the same way. So a human female would have a predicted mass of.
+
+mass = 52 + (9 * 1) + (25 * 0)
+
+Our p value is above 0.05 for isHumanYes again though, so that variable doesn't seem to be a statistically significant predictor.
+
+
+
+# Interaction terms
+Lets add an interaction term
+
+```{r}
+modMHG2 <- lm(mass ~ gender * height , data = starwars03)
+summary(modMHG2)
+```
+
+So here, we predict with a continuous variable (height) a discrete variable (gender = male, 1 if yes, 0 if no) and the interaction between th two. In any case this isn't a useful model, based on the p value for each of the terms. That said, the model wide p-value 1.61e-11 is really low. I'm not quite sure hot to interperet that. The model as a whole works, but no specific variable is a good predictor?
+
+# Logistic models
+What if we have a binary variable as our y value, rather than as our x value. Then we want to use logistic regression.
+
+```{r}
+starwars04 <- starwars03 %>% mutate(isHumanNum = ifelse(isHuman == ""Yes"", 1, 0))
+```
+
+
+
+```{r}
+modBinom <- glm(isHumanNum ~ mass, family = binomial, data = starwars04)
+summary(modBinom)
+```
+
+So in the above example, we are predicting the probability of being male from the data.
+Its not a statistically significant model, but lets plot the probability of being human from mass
+
+```{r}
+massRange <- min(na.omit(starwars04$mass)):max(na.omit(starwars04$mass))
+humanPred <- predict(modBinom, newdata = tibble(mass = massRange), type = ""response"") # for glm its called newdata, not data
+predDfMG <- tibble(mass = massRange, isHumanNum = humanPred)
+predDfMG
+ggplot(aes(x = mass, y = isHumanNum), data = starwars04) + geom_point() + 
+  geom_path(data = predDfMG)
+```
+
+So here, the line indicates the probability, based on our model, that a character is human, based on their mass.
+
+I notice though that humans tend to have intermediate mass. Lets use a polynomial regression to address this. To do this, I include a squared term in the model.
+
+```{r}
+modBinom2 <- glm(isHumanNum ~ mass + I(mass^2), family = binomial, data = starwars04)
+summary(modBinom2)
+```
+Hey, This looks ok!
+
+Lets plot it!
+
+```{r}
+massRange <- min(na.omit(starwars04$mass)):max(na.omit(starwars04$mass))
+humanPred <- predict(modBinom2, newdata = tibble(mass = massRange), type = ""response"") # for glm its called newdata, not data
+predDfMG <- tibble(mass = massRange, isHumanNum = humanPred)
+predDfMG
+ggplot(aes(x = mass, y = isHumanNum), data = starwars04) + geom_point() + 
+  geom_path(data = predDfMG)
+```
+
+This actually makes ok sense. At intermediate masses, things are around 50% likely to be human. At large and small masses, they are a lot less likely to be human."
+bioinformatics-amplicons-worklow,"General workflow
+
+Initial Steps
+
+Organizing your working environment
+Checking your installations
+Import fastq files into QIIME2
+
+Remove primers
+
+Check quality of trimmed reads
+
+DADA2
+
+Denoise
+Generate the error model
+Dereplicate
+Remove chimeras
+Merge reads
+Infer ASVs
+Generate the count table
+Assign Taxonomy
+
+Create a phylogenetic tree
+
+Export from QIIME2 and save",   
+bioinformatics-amplicons-workflow-dada2,"Denoise
+Generate the error model
+Dereplicate
+Remove chimeras
+Merge reads
+Infer ASVs
+Generate the count table
+Assign Taxonomy", 
+bioinformatics-metagenomics-qualitycontrol,    ,"cd data
+
+# run a loop to gunzip all fastq.gz files
+for file in *.fastq.gz
+do
+gunzip ${file}
+done
+
+# make a directory for the output
+mkdir 00_FastQC
+
+# run a loop to run fastqc on all fastq files
+for file in *.fastq;
+do
+fastqc ${file} -o 00_FastQC/
+done
+
+# run multiqc on all fastqc output files
+multiqc ."
+bioinformatics-metagenomics-taxonomicclassification,   ,"set -e #fail on any errors
+
+## This script goes with the tutorial for Lesson2
+## You can open the Binder here: https://mybinder.org/v2/gh/biovcnet/metagenomics-binder-qc/master?urlpath=lab
+## click ""Terminal"" to open the terminal emulator, which will also install this repo
+
+## This tutorial will:
+# 1) demonstrate the usage of Kraken2 for taxonomic classification using kmers
+# 2) demonstrate the usage of bbtools/bbduk.sh for adapter trimming using kmers
+# 3) demonstrate the usage of Krona for visualization of classification results
+
+## KRAKEN2
+# the full kraken2 manual can be found here: https://github.com/DerrickWood/kraken2/blob/master/docs/MANUAL.markdown
+
+# due to time, space, and memory constraints on Binder, 
+# we're going to use the SILVA rRNA database rather than 
+# a more complete database containing millions of genes/proteins
+
+# install the latest version of Kraken2 (conda install doesn't work due to ftp problems as of 4/16/2020)
+bash Lesson-2/install-kraken2.sh
+
+# add kraken executables to $PATH
+export PATH=$PATH:`pwd`/kraken2-2.0.9-beta/
+
+# add taxonomy database to $KRAKEN2_DB_PATH
+export KRAKEN2_DB_PATH=`pwd`/kraken2-2.0.9-beta/
+
+# move into data directory
+cd data
+
+# run kraken2 on forward reads from one sample using the silva database
+kraken2 --db silva BOX-10-56-15377_S368_L001_R1_001.fastq.gz
+
+# the output format looks like this
+#C       M03580:108:000000000-CMLF3:1:2119:21705:24840   26856   301     0:70 1:5 0:40 44130:2 0:131 3:5 26856:2 0:6 26856:3 3303:1 3:2
+#_C_lassified or _U_nclassified
+#        Sequence ID
+#                                                        taxonomy ID
+#                                                                sequence length
+#                                                                        the first 70 kmers mapped to taxid 0
+#                                                                            the next 5 kmers mapped to taxid 1
+#                                                                                      2 kmers mapped to taxid 44130
+
+# run kraken2 and return the classifications in a Report format as 'kraken2_report.tsv' 
+# with the raw data redirected to 'kraken2_raw.txt'
+kraken2 --db silva --report kraken2_report.tsv BOX-10-56-15377_S368_L001_R1_001.fastq.gz > kraken2_raw.txt
+
+# view the report
+head kraken2_report.tsv
+
+# notice that most of the reads were classified despite these samples being from shotgun metagenomes rather than amplicons
+# that seems a little fishy, doesn't it?
+
+## BBDUK
+# the full manual for bbduk can be found here: https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbduk-guide/
+# bbtools was installed using conda
+
+# let's try trimming the sequences first using bbduk
+# bbduk uses a kmer-matching approach to identify unwanted DNA strings (in this case, sequencing adapters) and then trim the reads
+bbduk.sh in=BOX-10-56-15377_S368_L001_R1_001.fastq.gz out=trimmed_BOX-10-56-15377_S368_L001_R1_001.fastq.gz ref=adapters ktrim=r
+
+# then run kraken2 again on the trimmed reads, and redirect the raw output to /dev/null
+kraken2 --db silva --report kraken2_report_trimmed.tsv trimmed_BOX-10-56-15377_S368_L001_R1_001.fastq.gz > /dev/null
+
+# view the report, notice that many fewer sequences were classified
+head kraken2_report_trimmed.tsv
+
+# kraken2 has a 'confidence' flag that is a value in the range of 0-1
+kraken2 --db silva --confidence 0.50 --report kraken2_report_trimmed_confidence.tsv trimmed_BOX-10-56-15377_S368_L001_R1_001.fastq.gz > /dev/null
+
+# view the report, notice that fewer than half of the sequences were confidently classified
+head kraken2_report_trimmed_confidence.tsv
+
+# run kraken2 and return the classifications in a MetaPhlan Report format as 'kraken2_report_mpa.tsv'
+kraken2 --db silva --use-mpa-style --report kraken2_report_trimmed_mpa.tsv trimmed_BOX-10-56-15377_S368_L001_R1_001.fastq.gz > /dev/null
+
+# view the report
+head kraken2_report_trimmed_mpa.tsv
+
+# trim the paired end sequences using bbduk
+
+# bbtools author Brian Bushnell recommends the following options for adapter trimming
+# ref=adapters # use the built in adapters.fa file containing all known Illumina adapters
+# ktrim=r      # trim from the right (3') end of the sequence
+# k=23         # use a kmer length of 23 bp
+# mink=11      # allow a minimum kmer length of 11 bp at the end of the sequence
+# hdist=1      # allow a maximum of 1 mismatch
+# tbo          # trim by overlap
+# tpe          # trim both reads to be the same length
+# ow=t         # allow overwriting of existing files
+
+bbduk.sh in=BOX-10-56-15377_S368_L001_R1_001.fastq.gz in2=BOX-10-56-15377_S368_L001_R2_001.fastq.gz out=trimmed_BOX-10-56-15377_S368_L001_R1_001.fastq.gz out2=trimmed_BOX-10-56-15377_S368_L001_R2_001.fastq.gz ref=adapters ktrim=r k=23 mink=11 hdist=1 tpe tbo ow=t
+
+# run kraken2 on paired end data
+kraken2 --db silva --report kraken2_report_trimmed_paired.tsv --paired trimmed_BOX-10-56-15377_S368_L001_R1_001.fastq.gz trimmed_BOX-10-56-15377_S368_L001_R2_001.fastq.gz > /dev/null
+
+# view the report
+head kraken2_report_trimmed_paired.tsv
+
+# sort the report first by taxonomic level and then descending order of matches, then filter for only Genera 
+sort -k4,4 -k2,2rn kraken2_report_trimmed_paired.tsv  | grep G | head
+
+# run a loop to do adapter trimming and kraken2 classification for all samples
+rm trimmed*
+for prefix in `ls *.gz | cut -f1 -d'_' | sort -u`; do
+echo $prefix
+read1=( ${prefix}*_R1_001.fastq.gz ) #the parentheses assign the globbed filename to an array (of length 1)
+read2=( ${prefix}*_R2_001.fastq.gz )
+
+bbduk.sh in=${read1} in2=${read2} out=trimmed_${read1} out2=trimmed_${read2} ref=adapters ktrim=r k=23 mink=11 hdist=1 tbo ow=t
+kraken2 --db silva --report kraken2_report_paired_${prefix}.tsv --paired trimmed_${read1} trimmed_${read2} > /dev/null
+done
+
+## KRONA
+# the full Krona manual can be found here: https://github.com/marbl/Krona/wiki/KronaTools
+# Krona was installed using conda
+
+#to use the SILVA taxonomy we installed for Kraken2:
+ktUpdateTaxonomy.sh --only-build ~/topic-metagenomics/kraken2-2.0.9-beta/silva/taxonomy/
+
+# now run Krona on each output file
+for prefix in `ls trimmed_*.gz | cut -f2 -d'_' | sort -u`; do
+ktImportTaxonomy -o krona_${prefix}.html -t 5 -m 3 -tax ~/topic-metagenomics/kraken2-2.0.9-beta/silva/taxonomy/ kraken2_report_paired_${prefix}.tsv
+done
+
+# in the file explorer on the left, navigate to the topic-metagenomics/data directory
+# double click one of the Krona output files to view it
+# click ""Trust HTML"" in the upper left of the window that opens up"
+bioinformatics-metagenomics-taxonomicclassification-kmmers,     ,"cd data
+
+# run FASTQC on forward reads
+fastqc R1_CAT0113.0315.DNA.fastq.gz
+
+# run FASTQC on reverse reads
+fastqc R2_CAT0113.0315.DNA.fastq.gz
+
+# run MULTIQC on FASTQC output
+multiqc .
+
+# run TRIMMOMATIC using CROP
+trimmomatic PE R1_CAT0113.0315.DNA.fastq.gz R2_CAT0113.0315.DNA.fastq.gz crop_R1_CAT0113_paired.fastq crop_R1_CAT0113_unpaired.fastq crop_R2_CAT0113_paired.fastq crop_R2_CAT0113_unpaired.fastq CROP:275 MINLEN:200
+
+# run FASTQC on cropped forward paired reads
+fastqc crop_R1_CAT0113_paired.fastq
+
+# run FASTQC on cropped reverse paired reads
+fastqc crop_R2_CAT0113_paired.fastq
+
+# run TRIMMOMATIC using SLIDINGWINDOW
+trimmomatic PE R1_CAT0113.0315.DNA.fastq.gz R2_CAT0113.0315.DNA.fastq.gz trim_R1_CAT0113_paired.fastq trim_R1_CAT0113_unpaired.fastq trim_R2_CAT0113_paired.fastq trim_R2_CAT0113_unpaired.fastq MINLEN:200 SLIDINGWINDOW:15:25 
+
+# run FASTQC on trimmed forward paired reads
+fastqc trim_R1_CAT0113_paired.fastq
+
+# run FASTQC on trimmed reverse paired reads
+fastqc trim_R2_CAT0113_paired.fastq
+
+# run MULTIQC on all FASTQC output
+multiqc ."
+bioinformatics-metagenomics-taxonomicclassification-bbduk,    ,"
+cd data
+### SOURMASH DEMO
+#Download a genome from genbank:
+curl -L -o shewanella.fa.gz http://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/178/875/GCF_000178875.2_ASM17887v2/GCF_000178875.2_ASM17887v2_genomic.fna.gz
+#Compute the MinHash signature for this genome using k=31 and scaled to 1/1000 of total signatures
+sourmash compute -k 31 --scaled=1000 shewanella.fa.gz
+# take a look at the signatures
+cat shewanella.fa.gz.sig | tr ',' '\n' | head -n20
+# For taxonomic classification, you'll want to use a proper database, available here:
+# https://sourmash.readthedocs.io/en/latest/databases.html
+# unfortunately they are too big to load in Binder so we will create our own mini-database
+# Building your own LCA (Last Common Ancestor) database
+# Download some pre-computed signatures from the TARA Oceans metagenome assembled genomes paper by Delmont et al.
+curl -L https://osf.io/bw8d7/download?version=1 -o delmont-subsample-sigs.tar.gz
+tar xzf delmont-subsample-sigs.tar.gz
+# Next, grab the associated taxonomy spreadsheet
+curl -O -L https://github.com/ctb/2017-sourmash-lca/raw/master/tara-delmont-SuppTable3.csv
+# view the file
+head tara-delmont-SuppTable3.csv
+# convert DOS line endings to UNIX line endings
+sed -i 's/\r/\n/g' tara-delmont-SuppTable3.csv
+# Build a sourmash LCA database named delmont.lca.json:
+sourmash lca index -f tara-delmont-SuppTable3.csv delmont.lca.json delmont-subsample-sigs/*.sig
+# view the database
+cat delmont.lca.json | tr ',' '\n' | head -n400
+# Using the LCA database to classify signatures
+# We can now use delmont.lca.json to classify signatures with k-mers according to the database we just created. 
+# (Note, the database is completely self-contained at this point.)
+# Let’s classify a single signature from the MAGs
+sourmash lca classify --db delmont.lca.json --query delmont-subsample-sigs/TARA_ION_MAG_00058.fa.gz.sig
+# and you should see:
+# loaded 1 LCA databases. ksize=31, scaled=10000
+# finding query signatures...
+# outputting classifications to -
+# ID,status,superkingdom,phylum,class,order,family,genus,species,strain
+# TARA_ION_MAG_00058,found,Bacteria,Proteobacteria,Gammaproteobacteria,Pseudomonadales,Pseudomonadaceae,Pseudomonas,Pseudomonas_mendocina,
+# classified 1 signatures total
+# You can classify a bunch of signatures and also specify an output location for the CSV:
+sourmash lca classify --db delmont.lca.json --query delmont-subsample-sigs/*.sig -o delmont_out.csv
+# The lca classify command supports multiple databases as well as multiple queries;
+# e.g. sourmash lca classify --db delmont.lca.json other.lca.json will classify based on the combination of taxonomies in the two databases.
+## BBDUK DEMO
+# Let's generate signatures for some metagenomic reads and classify them
+# but first we'll clean them up a bit with bbtools
+for prefix in `ls *_R1_*.fastq.gz | cut -f1 -d'_' | sort -u`; do 
+echo ${prefix}
+  R1=( ${prefix}*_R1_*.gz )
+  R2=( ${prefix}*_R2_*.gz )
+# Remove optical duplicates
+# This means they are Illumina reads within a certain distance on the flowcell.
+  clumpify.sh in1=$R1 in2=$R2 out=clumped.fq.gz dedupe optical ow=t
+# Remove low-quality regions by flowcell tile
+# All reads within a small unit of area called a micro-tile are averaged, then the micro-tile is either retained or discarded as a unit.
+  filterbytile.sh in=clumped.fq.gz out=filtered_by_tile.fq.gz ow=t
+#Trim adapters
+# 'ordered' means to maintain the input order as produced by clumpify.sh
+  bbduk.sh in=filtered_by_tile.fq.gz out=trimmed.fq.gz ktrim=r k=23 mink=11 hdist=1 tbo tpe minlen=70 ref=adapters ordered ow=t
+#Remove synthetic artifacts and spike-ins by kmer-matching
+# 'cardinality' will generate an accurate estimation of the number of unique kmers in the dataset using the LogLog algorithm
+  bbduk.sh in=trimmed.fq.gz out=filtered.fq.gz k=31 ref=artifacts,phix ordered cardinality ow=t
+#Quality-trim and entropy filter the remaining reads.
+# 'entropy' means to filter out reads with low complexity
+# 'maq' is 'mininum average quality' to filter out overall poor reads
+  bbduk.sh in=filtered.fq.gz out=qtrimmed_${prefix}.fq.gz qtrim=r trimq=10 minlen=70 ordered maxns=0 maq=8 entropy=.95 ow=t
+# remove extra files
+  rm clumped.fq.gz filtered_by_tile.fq.gz trimmed.fq.gz filtered.fq.gz
+# compute the minhash signatures
+  sourmash compute -k 31 --scaled=1000 qtrimmed_${prefix}.fq.gz
+done
+# Classify all of the signatures using the Delmont MAGs
+sourmash lca classify --db delmont.lca.json --query *.sig -o meta_out.csv
+# view the report
+cat meta_out.csv
+# You can also summarize the taxonomic distribution of the content with lca summarize:
+sourmash lca summarize --db delmont.lca.json --query *.sig
+#which will show you:
+# loaded 1 LCA databases. ksize=31, scaled=10000
+# finding query signatures...
+# ... loading CAT0113.0315.DNA_7 HWI-M02034:158:000000000-ADTW0:1:1101:17175:1474 1:N:0:TGACAT orig_bc=AAGCC new_bc=AAGCC bc_diffs=0 (f... loading CAT0113.0315.DNA_7 HWI-M02034:158:000000000-ADTW0:1:1101:17175:1474 2:N:0:TGACAT orig_bc=AAGCC new_bc=AAGCC bc_diffs=0 (floaded 14 signatures from 14 files total.
+# 0.1%     12   Bacteria;Cyanobacteria;Chroococcales;Chroococcales;Cyanobium
+# 0.1%     12   Bacteria;Cyanobacteria;Chroococcales;Chroococcales
+# 0.1%     12   Bacteria;Cyanobacteria;Chroococcales
+# 0.1%     12   Bacteria;Cyanobacteria
+# 0.1%     12   Bacteria
+# 0.1%      9   Eukaryota;Chlorophyta;Prasinophyceae;Mamiellales;Mamiellaceae;Micromonas
+# 0.1%      9   Eukaryota;Chlorophyta;Prasinophyceae;Mamiellales;Mamiellaceae
+# 0.1%      9   Eukaryota;Chlorophyta;Prasinophyceae;Mamiellales
+# 0.1%      9   Eukaryota;Chlorophyta;Prasinophyceae
+# 0.1%      9   Eukaryota;Chlorophyta
+# 0.1%      9   Eukaryota
+#You can also specify multiple databases and multiple query signatures on the command line; separate them with --db or --query.
+# And finally if you want to do an all-vs-all comparison for all signatures:
+sourmash compare --traverse-directory ./ *.sig -k 31 -o meta_comp
+# and plot them on a heatmap
+sourmash plot --pdf --labels meta_comp
+# open topic-metagenomics/data/meta_comp.matrix.pdf in the browser
+### SENDSKETCH DEMO
+# bbtools has commands similar to sourmash
+# SketchMaker: Creates one or more sketches from a fasta file
+sketch.sh
+# CompareSketch: Compares query sketches to others, and prints their kmer identity.
+comparesketch.sh
+# SendSketch: Compares query sketches to reference sketches hosted on a remote server via the Internet
+# Can use these different databases with address=
+# nt:      nt server
+# refseq:  Refseq server
+# silva:   Silva server
+# Submit search to the genbank 'nt' sketch database 
+sendsketch.sh in=qtrimmed_BOX-2-63-15088.fq.gz address=nt
+# Query: M03580:108:000000000-CMLF3:1:1101:15093:1492 2:N:0:GACATGGT+CCATGAAC        DB: nt        SketchLen: 18257        Seqs: 97732         Bases: 29417332        gSize: 19416865        GC: 0.458        Quality: 0.6750        File: BOX-2-63-15088_S79_L001_R2_001.fastq.gz
+# WKID        KID        ANI        SSU        Complt        Contam        Matches        Unique        TaxID        gSize        gSeqs        taxName
+# 0.27%        0.20%        80.57%        .        100.00%        0.62%        37        33        41875        14737K        7898        Bathycoccus prasinos
+# 0.80%        0.05%        83.81%        .        100.00%        0.77%        10        7        335992        1308193        46        Candidatus Pelagibacter ubique HTCC1062
+# 29.41%        0.03%        96.01%        .        100.00%        0.80%        5        2        542413        17686        1        uncultured bacterium ARCTIC24_F_09
+# 12.20%        0.03%        92.63%        .        100.00%        0.80%        5        4        542402        31740        1        uncultured bacterium ARCTIC13_E_12
+# 0.15%        0.02%        75.08%        .        100.00%        0.81%        3        3        212695        2113690        1272        uncultured Flavobacteriia bacterium
+# 0.03%        0.02%        69.87%        .        100.00%        0.81%        3        0        70448        10300K        7826        Ostreococcus tauri
+# 0.02%        0.02%        72.90%        .        93.77%        0.82%        3        0        296587        20567K        10128        Micromonas commoda
+# 0.02%        0.01%        73.13%        .        73.82%        0.84%        3        0        9593        26202K        3953        Gorilla gorilla
+# Submit search to the genbank 'refseq' sketch database
+sendsketch.sh in=qtrimmed_BOX-2-63-15088.fq.gz address=refseq
+# Query: M03580:108:000000000-CMLF3:1:1101:15093:1492 2:N:0:GACATGGT+CCATGAAC        DB: RefSeq        SketchLen: 36510        Seqs: 97732         Bases: 29417332        gSize: 19437976        GC: 0.458        Quality: 0.6750        File: BOX-2-63-15088_S79_L001_R2_001.fastq.gz
+# WKID        KID        ANI        SSU        Complt        Contam        Matches        Unique        TaxID        gSize        gSeqs        taxName
+# 0.27%        0.20%        80.65%        .        100.00%        0.90%        74        71        41875        14645K        21        Bathycoccus prasinos
+# 0.95%        0.06%        84.41%        .        100.00%        1.04%        23        3        1118158        1274423        1        Candidatus Pelagibacter ubique HTCC1040
+# 0.48%        0.07%        82.26%        .        100.00%        1.02%        27        0        1822252        2969096        592        Erythrobacter sp. HI0077
+# 0.47%        0.07%        82.25%        .        100.00%        1.02%        27        0        1822249        2970916        583        Erythrobacter sp. HI0074
+# 0.43%        0.07%        81.97%        .        100.00%        1.03%        25        2        1306953        3057665        28        Erythrobacter citreus LAMA 915
+# 0.42%        0.07%        81.88%        .        100.00%        1.03%        25        0        1822222        3129846        880        Erythrobacter sp. HI0019
+# 0.42%        0.07%        81.88%        .        100.00%        1.03%        25        0        1822227        3130890        610        Erythrobacter sp. HI0028
+# 0.07%        0.02%        76.90%        .        100.00%        1.08%        8        5        1327752        5846298        71        Idiomarina aquatica
+# 0.10%        0.02%        77.85%        .        100.00%        1.08%        8        0        1822224        4208587        717        Sulfitobacter sp. HI0021
+# 0.10%        0.02%        77.85%        .        100.00%        1.08%        8        0        1822226        4212479        458        Sulfitobacter sp. HI0027
+# 0.09%        0.02%        77.42%        .        100.00%        1.08%        7        0        1822251        4097586        875        Sulfitobacter sp. HI0076
+# 0.19%        0.01%        79.30%        .        100.00%        1.08%        5        1        2268451        1364070        1        Candidatus Pelagibacter sp. FZCC0015
+# 0.18%        0.01%        79.14%        .        100.00%        1.08%        5        0        439493        1446246        1        Candidatus Pelagibacter sp. HTCC7211
+# 0.06%        0.01%        76.37%        .        100.00%        1.09%        4        1        1869314        3544041        25        Erythrobacter sp. SAORIC-644
+# 0.06%        0.01%        75.91%        .        100.00%        1.09%        4        0        1968541        3929301        6        Sulfitobacter sp. D7
+# 0.05%        0.01%        75.88%        .        100.00%        1.09%        4        0        225422        3942123        42        Sulfitobacter indolifex
+# 0.10%        0.01%        73.27%        .        100.00%        1.09%        3        2        2508687        1666689        1        Candidatus Thioglobus sp. NP1
+# 0.12%        0.01%        78.18%        .        100.00%        1.09%        3        1        859653        1325178        1        alpha proteobacterium HIMB5
+# 0.06%        0.01%        76.15%        .        100.00%        1.09%        3        2        2055892        2593616        1        Idiomarina sp. X4
+# 0.13%        0.01%        78.55%        .        100.00%        1.09%        3        0        1977864        1199959        1        Candidatus Pelagibacter sp. RS39
+# Submit search to the 'silva' sketch database
+sendsketch.sh in=qtrimmed_BOX-2-63-15088.fq.gz address=silva
+# Query: M03580:108:000000000-CMLF3:1:1101:15093:1492 2:N:0:GACATGGT+CCATGAAC        DB: Silva        SketchLen: 15        Seqs: 97732         Bases: 29417332        gSize: 17328        GC: 0.458        Quality: 0.6750        File: BOX-2-63-15088_S79_L001_R2_001.fastq.gz
+# WKID        KID        ANI        SSU        Complt        Contam        Matches        Unique        TaxID        gSize        gSeqs        taxName
+# 53.33%        6.25%        97.71%        .        6.25%        46.67%        8        2        1561972        133927        94        seawater metagenome
+# 53.33%        0.70%        97.72%        .        0.70%        46.67%        8        0        408172        1337367        1931        marine metagenome
+# 40.00%        0.13%        96.69%        .        0.13%        60.00%        6        1        256318        5566707        48992        metagenome
+# TaxServer: Starts a server that translates NCBI taxonomy.
+# If you want to host your own online database
+taxserver.sh"
+bioinformatics-metagenomics-taxonomicclassification-bbtools,Mapping reads.  ,"# In this tutorial we will learn how to map reads to reference genomes using bbtools
+
+# The basic aligner in bbtools is called bbmap, and it is designed to map reads from 1 sample to 1 reference genome
+# The quality of read mapping is determined using an inherent scoring algorithm 
+# The score generated by the algorithm is called minratio, and it is a measure of the read mapping score divided by its best possible score (100% match, no indels)
+# You can choose a preferred minratio for your own reads. However, since it's not a trivial number, you can also choose to just set the minimum %id of the read to the reference. For example, minid=0.9 means at least 90% of the bases in the read will match the reference at the mapping site.
+# bbmap will use your set mind to calculate a corresponding minratio
+# bbmap by default uses all available threads, so if you're using a shared machine you want to limit the number of threads.
+# There is no need to unzip input files
+
+
+cd data
+
+# Here we map paired reads from sample SRR5780888 to reference genome DvH, set the minimum %ID to 95% and request that only mapped reads will be written into the output bam file with outm
+# using outm is highly recommended because it reduces the size of the output file significantly
+
+bbmap.sh ref=DvH_reference.fa.zip in1=SRR5780888_1.fastq.zip in2=SRR5780888_2.fastq.zip outm=DvH_SRR5780888_mapped.bam minid=0.95
+
+
+
+
+
+# What if you have more that one sample to map to the genome?
+# Use bbwrap
+
+# Here we specify input files from 2 samples. bbmap will only create the reference once and then keep using it. We're setting the mapper to bbmap which is suitable for short reads. There are other specific mappers for PacBio reads.
+
+bbwrap.sh ref=DvH_reference.fa.zip in1=SRR5780888_1.fastq.zip,SRR5780889_1.fastq.zip in2=SRR5780888_2.fastq.zip,SRR5780889_2.fastq.zip mapper=bbmap outm=DvH_888.bam,DvH_889.bam
+
+
+
+
+
+
+# If you have more than one reference genome you should use bbsplit. Consider what to do with reads that map to more than one genome. Do you want to just keep the best hit? Keep all hits? Throw all ambiguously mapped reads? This depends on downstream analyses and on similarity between the reference genomes. You can choose what to do using the parameter ambigous2
+
+bbsplit.sh -h
+
+# ambiguous2=<best>    Set behavior only for reads that map ambiguously to multiple different references.
+#                      Normal 'ambiguous=' controls behavior on all ambiguous reads;
+#                      Ambiguous2 excludes reads that map ambiguously within a single reference.
+#                      best   (use the first best site)
+#                      toss   (consider unmapped)
+#                      all   (write a copy to the output for each reference to which it maps)
+#                      split   (write a copy to the AMBIGUOUS_ output for each reference to which it maps)
+
+
+
+
+# Output types
+
+# bbmap produces textual outputs that make your life easier later on. For example, you can get a summary of coverage statistics with covstats, data for a coverage histogram with covhist and coverage per base in the reference with basecov. Be aware that basecov generates very large files.
+
+bbmap.sh ref=DvH_reference.fa.zip in1=SRR5780888_1.fastq.zip in2=SRR5780888_2.fastq.zip outm=DvH_SRR5780888_mapped.bam minid=0.95 covstats=DvH_SRR5780888_covstats.txt covhist=DvH_SRR5780888_covhist.txt
+
+
+
+
+# If you have many read files and one reference genome (or set of genomes), you can use a loop in bash with bbmap/bbsplit.
+
+cd ..
+
+curdir=""data/""
+
+for f in ${curdir}*1.fastq.zip
+do
+	f2=$(echo $f | sed 's/1\.fastq\.zip/2\.fastq\.zip/')
+	echo $f,$f2
+	fbase=$(echo $f | cut -d ""/"" -f2 | sed 's/_.*//')
+	echo $fbase
+	bbmap.sh ref=${curdir}/DvH_reference.fa.zip in1=${f} in2=${f2} covstats=${curdir}${fbase}_covstats.txt covhist=${curdir}${fbase}_covhist.txt basecov=${curdir}${fbase}_basecov.txt outm=${curdir}${fbase}_mapped.bam minid=0.95
+done"
+bioinformatics-metagenomics-genomeassembly,    ,"
+cd data
+
+# unzip files, concatenate R1's and R2's, and rezip
+for file in *.fastq.zip; do unzip ${file}; done
+cat SRR5780888_1.fastq SRR5780889_1.fastq | gzip > dvh_1.fastq.gz
+cat SRR5780888_2.fastq SRR5780889_2.fastq | gzip > dvh_2.fastq.gz
+
+# rezip individual files
+for file in SRR*.fastq; do gzip ${file}; done
+
+for prefix in `ls *_1.fastq.gz | cut -f1 -d'_' | sort -u`; do 
+
+  echo ${prefix}
+
+  R1=( ${prefix}*_1.fastq.gz )
+  R2=( ${prefix}*_2.fastq.gz )
+    
+  #Trim adapters
+  # 'ordered' means to maintain the input order as produced by clumpify.sh
+  bbduk.sh in=${R1} in2=${R2} out=trimmed.fq.gz ktrim=r k=23 mink=11 hdist=1 tbo tpe minlen=70 ref=adapters ordered ow=t
+
+  #Remove synthetic artifacts and spike-ins by kmer-matching
+  # 'cardinality' will generate an accurate estimation of the number of unique kmers in the dataset using the LogLog algorithm
+  bbduk.sh in=trimmed.fq.gz out=filtered.fq.gz k=31 ref=artifacts,phix ordered cardinality ow=t
+  
+  #Quality-trim and entropy filter the remaining reads.
+  # 'entropy' means to filter out reads with low complexity
+  # 'maq' is 'mininum average quality' to filter out overall poor reads
+  bbduk.sh in=filtered.fq.gz out=${prefix}_qtrimmed.fq.gz qtrim=r trimq=10 minlen=70 ordered maxns=0 maq=8 entropy=.95 ow=t
+
+  # Assembly using tadpole
+  tadpole.sh in=${prefix}_qtrimmed.fq.gz out=tadpole_contigs.fasta k=124 ow=t prefilter=2 prepasses=auto
+  
+  # Assembly quality-trimmed reads using SPAdes
+  spades.py -o ${prefix}_spades --12 ${prefix}_qtrimmed.fq.gz --only-assembler
+  
+  # calculate assembly statistics
+  statswrapper.sh ${prefix}_spades/*.fasta tadpole_contigs.fasta > ${prefix}_stats.txt
+  
+  cat ${prefix}_stats.txt
+  
+  # remove extra files
+  # rm trimmed.fq.gz filtered.fq.gz
+  
+done"
+bioinformatics-functionalannotation-blast,"Using Binder to populate a terminal environment that contains the alignment tools BLAST and DIAMOND.
+
+Set-up
+
+Create a directory and move our data into that directory.
+
+mkdir blast-example
+mv *faa ./blast-example
+cd blast-example
+We will be working with 2 files:
+
+Cyanobacteria-TMED155.orfs.faa
+carbon-fixation-markers.faa
+Cyanobacteria-TMED155.orfs.faa contains 1,585 predicted proteins from a cyanobacteria metagenome-assembled genome (MAG) reconstructed from the Mediterranean Sea
+
+As determined by CheckM - the MAG TMED155 is 64.63% complete with 1.29% redundancy.
+
+carbon-fixation-markers.faa contains 326 proteins chosen to represent key marker genes in the 5 established carbon fixation pathways - Calvin-Benson-Bassham, reverse TCA, Wood-Ljungdahl, 3-hydroxypropionate bicycle, & 3-hydroxypropionate/4-hydroxybutyrate cycle.
+
+BLAST Walkthrough
+
+Create a BLAST index of the 'subject' sequences. In this case, the subject are the sequences we are comparing to the genome.
+
+makeblastdb -in carbon-fixation-markers.faa -dbtype prot
+Creates 3 index files that end in *phr, *pin, *psq
+
+To compare the TMED155 proteins against the carbon fixation gene database, run a BLASTP command.
+
+blastp -query Cyanobacteria-TMED155.orfs.faa -db carbon-fixation-markers.faa -out BLAST_fulloutput.txt -evalue 1e-20 -num_descriptions 5 -num_alignments 5
+Let's check the contents of the output
+
+less +11093 BLAST_fulloutput.txt
+This format is very similar to the standard BLAST web interface, which might be easy for a person to understand, but is terrible for a machine.
+
+We will use the tabular out format option to force BLAST it give us a tab-delimited table. And we will select which values we want to see and in what order. The full list of options can be found here.
+
+blastp -query Cyanobacteria-TMED155.orfs.faa -db carbon-fixation-markers.faa -out BLAST_output.tab -evalue 1e-20 -max_target_seqs 10 -outfmt '6 qseqid qstart qend sseqid slen sstart send bitscore pident evalue'
+less BLAST_output.tab
+The output contains a lot of poor BLAST HSP (high scoring pairs). We can discern this by the low percent identity values (2nd to last column). We can use Unix to only select for matches with high percent identity.
+
+awk '{if ($9>=50) print }' BLAST_output.tab
+And sort that output
+
+awk '{if ($9>=50) print }' BLAST_output.tab | sort -nrk 9,9
+Unfortunately, the BLAST output only captures the subject ID, but the descriptions of the carbon-fixation-markers.faa contains functional annotations.
+
+We can grab all of them at once with something like...
+
+awk '{if ($9>=50) print }' BLAST_output.tab | cut -f1,4 | sort -k 2 > TMED155-BLAST-matches.tmp
+cut -f2 TMED155-BLAST-matches.tmp > gene-matches.tmp
+grep -f gene-matches.tmp carbon-fixation-markers.faa | sed 's/>//' | sort > gene-matches-descriptions.tmp
+paste TMED155-BLAST-matches.tmp gene-matches-descriptions.tmp | sort > TMED155-BLAST-matches.tsv
+rm *.tmp
+DIAMOND Walkthrough
+
+We will follow a similar series of steps to perform a DIAMOND BLAST search.
+
+Make a DIAMOND index of the subject sequences
+
+diamond makedb --in carbon-fixation-markers.faa -d carbon-fixation-markers
+And then perform a DIAMOND BLASTP search - in fast mode
+
+diamond blastp -p 1 -q Cyanobacteria-TMED155.orfs.faa -d carbon-fixation-markers.dmnd -o TMED155-diamond-fast.tab --max-target-seqs 15 -f 6 qseqid qstart qend sseqid slen sstart send bitscore pident evalue
+Perform a DIAMOND BLASTP search - in more-sensitive mode
+
+diamond blastp --more-sensitive -p 1 -q Cyanobacteria-TMED155.orfs.faa -d carbon-fixation-markers.dmnd -o TMED155-diamond-more-sensitive.tab --max-target-seqs 15 -f 6 qseqid qstart qend sseqid slen sstart send bitscore pident evalue
+Notice the longer compute time and then compare the outputs
+
+wc -l TMED155-diamond-fast.tab
+wc -l TMED155-diamond-more-sensitive.tab
+
+awk '{if ($9>=50) print }' TMED155-diamond-fast.tab | sort -nrk 9,9 | wc -l
+awk '{if ($9>=50) print }' TMED155-diamond-more-sensitive.tab | sort -nrk 9,9 | wc -l
+more-sensitive detects more significant matches than fast. But for high percent identity matches (>50%) more-sensitive and fast have the same number of matches.
+
+Compare the annotations as above:
+
+awk '{if ($9>=50) print }' TMED155-diamond-more-sensitive.tab | cut -f1,4 | sort -k 2 > TMED155-diamond-matches.tmp
+cut -f2 TMED155-diamond-matches.tmp > gene-matches.tmp
+grep -f gene-matches.tmp carbon-fixation-markers.faa | sed 's/>//' | sort > gene-matches-descriptions.tmp
+paste TMED155-diamond-matches.tmp gene-matches-descriptions.tmp | sort > TMED155-diamond-matches.tsv
+rm *.tmp
+Interestingly, DIAMOND BLAST detected an other signifcant match in TMED155 compared to BLAST for protein 120126_4 with similarity to formate dehydrogenase beta subunit. This does not change our interpretation of the carbon fixation potential for TMED155 as formate dehydrogenase can be part of multiple cellular pathways.",
+bioinformatics-functionalannotation-HMMER,"Using Binder to populate a terminal environment that contains the alignment tools HMMER.
+","
+##We'll compare the ability to detect this protein using BLAST and HMMER
+
+cd example_data/
+ls
+##We have a set of 16 MyD88 proteins MyD88.faa and the CANU-filtered Bugula neritina proteome Bugula.pep
+
+##Make a BLAST database
+
+makeblastdb -in Bugula.pep -dbtype prot
+##BLAST MyD88 proteins against the B. neritina genome to see if we get a result.
+
+blastp -query MyD88.faa -db Bugula.pep -outfmt 6 -evalue 1e-5 -out blastp.MyD88.Bugula.pep.outfmt6
+##This should be a rather short blast operation, because we only have a few sequences.
+
+##Did we get any results at all?
+
+less blastp.MyD88.Bugula.pep.outfmt6
+##To exit from the ""less"" command, push lower case ""q"" on your keyboard."
+bioinformatics-functionalannotation-alignsequences,"First we have to align the sequences. It is important to eyeball them at some point to make sure that they are not composed of non-overlapping, too long or too short sequences. It is better to be more conservative in the number of sequences rather than trying to include everything. Some databases contain mislabeled sequences that can confound your search for proteins.","##Take a look inside the file to see if the alignments make sense. Kick out any sequences that are making the sequences less cohesive.
+
+less -S MyD88.msa
+##There are two key parts of the alignment that suggest it might not be great quality - the string a gaps in most sequences at the start and end of the alignment. We can removed those sequences and re-run muscle.
+
+rm MyD88.msa
+nano MyD88.faa
+##Then find the sequences tr|M4I212|M4I212_CRAGI and tr|A0A2B4RVP2|A0A2B4RVP2_STYPI and use Ctrl+k to cut the lines (header + sequence) for both sequences. Save and close. Re-run the ##multiple sequence alignment.
+
+muscle -in MyD88.faa -out MyD88.msa
+##Then, we are going to use hmmbuild to analyze the occurrence of each peptide in relation to the position in the aligned proteins.
+
+hmmbuild MyD88.hmm MyD88.msa
+##The final step to create a mathematical matrix that shows the probability of each transition based on the data provided.
+
+hmmpress MyD88.hmm
+ls
+##The MyD88.htm is now a searchable hmm profile that we can use with our genome to find proteins which are probably related.
+
+hmmscan --domtblout Bugula.MyD88.domtblout MyD88.hmm Bugula.pep
+##Look at the results in the Bugula.MyD88.domtblout
+
+less Bugula.MyD88.domtblout
+##Compare hmmscan to hmmsearch
+
+hmmsearch --tblout Bugula.MyD88.tblout MyD88.hmm Bugula.pep
+less Bugula.MyD88.tblout
+##Are there any potential matches to our hmm model?"
+bioinformatics-functionalannotation-fegenie,"FeGenie is a collection of HMMs, based on a comprensive set of genetic markers related to iron acquistion/scavenging, transport, efflux, storage, as well as iron redox (dissimilatory reduction and oxidation). ","##Enter the main FeGenie directory
+
+cd FeGenie
+##print the FeGenie help menu
+
+FeGenie -h
+##run FeGenie on test dataset
+
+FeGenie.py -bin_dir genomes/ -bin_ext fna -out fegenie_out
+##Go into the output directory and check out the output files
+
+cd fegenie_out
+less FeGenie-geneSummary-clusters.csv
+##run FeGenie on gene calls
+
+FeGenie.py -bin_dir ORFs/ -bin_ext faa -out fegenie_out --orfs
+##run FeGenie on gene calls, and use reference database (RefSeq sub-sample) for cross-validation
+
+FeGenie.py -bin_dir ORFs/ -bin_ext faa -out fegenie_out --orfs -ref refseq_db/refseq_nr.sample.faa"
+bioinformatics-functionalannotation-HMM,    ,"##Enter the MagicCave
+
+cd MagicCave/
+##print the MagicLamp help menu
+
+MagicLamp.py help
+##print WspGenie help menu
+
+MagicLamp.py WspGenie -h
+##run WspGenie on test dataset
+
+MagicLamp.py WspGenie -bin_dir test_dataset/ -bin_ext fna -out wspgenie_out
+##go into the wspgenie output directory and check out the output file
+
+cd wspgenie_out/
+less -S wspgenie-summary.csv
+##check out the gene predictions
+
+cd ORF_calls/
+cd ../../
+mv ORF calls to the main directory
+
+mv wspgenie_out/ORF_calls/ ./
+##print LithoGenie help menu
+
+MagicLamp.py LithoGenie -h
+##run LithoGenie on ORF calls
+
+MagicLamp.py LithoGenie -bin_dir ORF_calls/ -bin_ext faa --orfs -out lithogenie_out
+##check out the output
+
+cd lithogenie_out/
+less -S lithogenie-summary.csv
+less lithogenie.ALL.heatmap.csv
+cd ../
+##re-run LithoGenie to create a .heatmap.csv for an element-of-interest
+
+MagicLamp.py LithoGenie -bin_dir ORF_calls/ -bin_ext faa --orfs -out lithogenie_out --skip -cat sulfur
+# answer 'y' to the question
+MagicLamp.py LithoGenie -bin_dir ORF_calls/ -bin_ext faa --orfs -out lithogenie_out --skip -cat iron
+##check out the new results
+
+cd lithogenie_out/
+less lithogenie.sulfur.heatmap.csv
+less lithogenie.iron.heatmap.csv
+##print the HmmGenie help menu
+
+MagicLamp.py HmmGenie -h
+##run HmmGenie with a set of HMMs for gas vesicle formation
+
+MagicLamp.py HmmGenie -hmm_dir MagicCave/hmms/gas/ -hmm_ext hmm -bin_dir test_dataset/ -bin_ext fna -out gas_out
+##check out the results and re-run HmmGenie with more stringent parameters
+
+MagicLamp.py HmmGenie -hmm_dir MagicCave/hmms/gas/ -hmm_ext hmm -bin_dir test_dataset/ -bin_ext fna -out gas_out -clu 5
+##check out the results
+
+cd gas_out/
+less -S genie-summary.csv"
+bioinformatics-functionalannotation-KEGG,     ,"##here are 4 example files from the various KEGG KOALA outputs, blastkoala.txt, ghostkoala.txt, kofamkoala.txt, and NORP_subset.txt. Each one has the data formatted in a specific way that may ##(or may not) work with KEGG-Decoder.
+
+blastkoala.txt is a single genome formated correctly
+
+BAFMBKGE_00001  K03596
+BAFMBKGE_00002  K03100
+BAFMBKGE_00003  K03685
+##As a single genome, KEGG-Decoder can only produce a static visualization output - interactive visualization requires at least 3 genomes.
+
+KEGG-decoder -i blastkoala.txt -o blastkoala.ko -v static
+##The blastkoala.svg file contains a heatmap comparing the genome results to the KEGG-Decoder pathways. The more red the cell of the heatmap, the more complete the pathway
+
+ghostkoala.txt has a single genome that is formatted incorrectly
+
+NC_015736.1_1   K01703
+NC_015736.1_2   K01704
+##KEGG-Decoder can only accept gene IDs with a single _. KEGG-Decoder uses all of the string prior to the first _ as the name to associate with each row of the output and heatmap. Identical strings ##would result in the merging of multiple genomes together
+
+sed 's/NC_/NC/g' ghostkoala.txt > ghostkoala-mod.txt
+KEGG-decoder -i ghostkoala-mod.txt -o ghostkoala.ko -v static
+kofamkoala.txt is a complex table that requires some pre-processing
+
+sed 's/ \+ /\t/g' kofamkoala.txt | cut -f1,2 | sed 's/\* //g' |  grep -v ""#"" > kofamkoala-mod.txt
+KEGG-decoder -i kofamkoala-mod.txt -o kofamkoala.ko -v static
+##The genome name for the output will be WP as it is the string prior to the first _.
+
+NORP_subset.txt contains KOALA results for 4 genomes. The NORP.ko file will be created after each KEGG-Decoder run, but will contain identical contents. It is the numerical values used to the ##create the heatmap. Because there are 3+ genomes, we can make an interative visualization as well as a static visualization.
+
+KEGG-decoder -i NORP_subset.txt -o NORP.ko -v static
+KEGG-decoder -i NORP_subset.txt -o NORP.ko -v interactive"
+bioinformatics-transcriptomics-rRNA,"Transcriptomics is the study of the transcriptome—the complete set of RNA transcripts that are produced by the genome, under specific circumstances or in a specific cell—using high-throughput methods, such as microarray analysis.
+
+Why should you remove rRNA from your RNA samples?
+
+You don't want to waste money on sequencing rRNA, which makes up >90% of all RNA. 
+
+Recommended pipelines: 
+1.Quality-trimming
+2. Combine forward and reverse (e.g flash)
+3. rRNA-depletion SortMeRNA",    
