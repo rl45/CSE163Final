@@ -1,3 +1,6 @@
+//Weblink:
+//https://nifty-wright-dc88dd.netlify.app
+
 // Dimensions of sunburst.
 var width = 750;
 var height = 600;
@@ -46,7 +49,7 @@ var colors = {
     "genomeassembly": "rgb(50,85,95)",
     "transcriptomics": "rgb(50,95,95)",
     "rRNA": "rgb(50,105,95)",
-    
+
 };
 
 // Total size of all segments; we set this later, after loading the data.
@@ -88,10 +91,11 @@ var notesContainer = document.getElementById("notes")
 // Use d3.text and d3.csvParseRows so that we do not need to have a header
 // row, and can receive the csv as an array of arrays.
 d3.text("Bioinformatics.csv", function (text) {
-
+    //Parse Rows
     var csv = d3.csvParseRows(text);
     //Build the nodes connected to each other
     var json = buildHierarchy(csv);
+    //Create the sequence subnurst
     createVisualization(json);
 });
 
@@ -127,20 +131,27 @@ function createVisualization(json) {
             return (d.x1 - d.x0 > 0.005); // 0.005 radians = 0.29 degrees
         });
 
+    //Create a group with the node data into it
     group = vis.data([json]).selectAll("path")
         .data(nodes)
         .enter().append('svg:g');
 
+
+    group = vis.data([json]).selectAll("path")
+        .data(d3.hierarchy(json))
+        .enter().append('svg:g');
+
+    //Add the paths. Each path has a mouseover as well as a click attachment to it
     path = group.append("svg:path")
         .attr("display", function (d) { return d.depth ? null : "none"; })
         .attr("d", arc)
         .attr("fill-rule", "evenodd")
         .style("fill", function (d) { return colors[d.data.name]; })
         .style("opacity", 1)
-        .text("Testing")
         .on("mouseover", mouseover)
         .on("click", click)
 
+    //Originally this code below was to add a text onto it. However, it seemed too crowded
     var path = vis.data([json]).selectAll("path")
         .data(nodes)
         .enter().append("svg:path")
@@ -149,11 +160,10 @@ function createVisualization(json) {
         .attr("fill-rule", "evenodd")
         .style("fill", function (d) { return colors[d.data.name]; })
         .style("opacity", 1)
-        .text("Testing")
         .on("mouseover", mouseover)
         .on("click", click)
 
-    // Add the mouseleave handler to the bounding circle.
+    // Add the mouseleave handler to the bounding circle. When your mouse leaves the circle
     d3.select("#container").on("mouseleave", mouseleave);
 
     // Get total size of the tree = value of root node from partition.
@@ -480,21 +490,18 @@ function buildHierarchy(csv) {
           continue; //Skip the loop
         }*/
 
-
         var parts = sequence.split("-");
         var currentNode = root;
         for (var j = 0; j < parts.length; j++) {
             var children = currentNode["children"];
             console.log("currentnode" + currentNode)
 
-
-            if(children == undefined){
+            if (children == undefined) {
                 break;
             }
-
-
             var nodeName = parts[j];
             var childNode;
+            //If there's more to check, continue
             if (j + 1 < parts.length) {
                 // Not yet at the end of the sequence; move down the tree.
                 var foundChild = false;
