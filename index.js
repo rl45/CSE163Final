@@ -1,6 +1,9 @@
 //Weblink:
 //https://nifty-wright-dc88dd.netlify.app
 //Code Used: https://bl.ocks.org/kerryrodden/766f8f6d31f645c39f488a0befa1e3c8
+//Tried using D5, but too many errors with using Observable code. 
+//Used Prettify to convert code into a digestible script for users to view:
+//https://github.com/googlearchive/code-prettify
 
 // Dimensions of sunburst.
 var width = 750;
