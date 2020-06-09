@@ -10,41 +10,43 @@ var b = {
 
 // Mapping of step names to colors.
 var colors = {
-    "bioinformatics": "#5687d1",
-    "unix": "#7b615c",
-    "setup": "#de783b",
-    "intro": "#6ab975",
-    "commands": "#a173d1",
-    "structure": "#6ab975",
-    "variables": "#bbbbbb",
-    "forloop": "#a173d1",
+    "bioinformatics": "rgb(0,0,0)",
 
-    "r": "#5687d1",
-    "data": "#7b615c",
-    "tidyverse": "#de783b",
-    "plotting": "#6ab975",
-    "barplot": "#a173d1",
-    "linearmodel": "#6ab975",
+    "unix": "rgb(10,90,90)",
+    "setup": "rgb(25,90,90)",
+    "intro": "rgb(40,90,90)",
+    "commands": "rgb(55,90,90)",
+    "structure": "rgb(70,90,90)",
+    "variables": "rgb(85,90,90)",
+    "forloop": "rgb(100,90,90)",
+
+    "r": "rgb(100,0,100)",
+    "data": "rgb(100,10,100)",
+    "tidyverse": "rgb(100,20,100)",
+    "plotting": "rgb(100,30,100)",
+    "barplot": "rgb(100,40,100)",
+    "linearmodel": "rgb(100,50,100)",
 
 
-    "functionalannotation": "#5687d1",
-    "blast": "#7b615c",
-    "HMMER": "#de783b",
-    "alignsequences": "#6ab975",
-    "fegenie": "#a173d1",
-    "HMM": "#6ab975",
+    "functionalannotation": "rgb(0,60,10)",
+    "blast": "rgb(0,60,20)",
+    "HMMER": "rgb(0,60,30)",
+    "alignsequences": "rgb(0,60,40)",
+    "fegenie": "rgb(0,60,50)",
+    "HMM": "rgb(0,60,60)",
 
-    "amplicons": "#5687d1",
-    "workflow": "#7b615c",
-    "dada2": "#de783b",
+    "amplicons": "rgb(30,20,80)",
+    "workflow": "rgb(30,35,80)",
+    "worklow": "rgb(30,35,80)",
+    "dada2": "rgb(30,45,80)",
 
-    "metagenomics": "#5687d1",
-    "qualitycontrol": "#7b615c",
-    "taxonomicclassification": "#de783b",
-    "genomeassembly": "#6ab975",
-    "transcriptomics": "#a173d1",
-    "rRNA": "#6ab975",
-
+    "metagenomics": "rgb(50,55,95)",
+    "qualitycontrol": "rgb(50,65,95)",
+    "taxonomicclassification": "rgb(50,75,95)",
+    "genomeassembly": "rgb(50,85,95)",
+    "transcriptomics": "rgb(50,95,95)",
+    "rRNA": "rgb(50,105,95)",
+    
 };
 
 // Total size of all segments; we set this later, after loading the data.
@@ -61,6 +63,7 @@ var vis = d3.select("#chart").append("svg:svg")
 var partition = d3.partition()
     .size([2 * Math.PI, radius * radius]);
 
+//Initialize the arc 
 var arc = d3.arc()
     .startAngle(function (d) { return d.x0; })
     .endAngle(function (d) { return d.x1; })
@@ -82,13 +85,12 @@ var notes = []
 
 var notesContainer = document.getElementById("notes")
 
-
-
-
 // Use d3.text and d3.csvParseRows so that we do not need to have a header
 // row, and can receive the csv as an array of arrays.
 d3.text("Bioinformatics.csv", function (text) {
+
     var csv = d3.csvParseRows(text);
+    //Build the nodes connected to each other
     var json = buildHierarchy(csv);
     createVisualization(json);
 });
